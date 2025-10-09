@@ -449,6 +449,8 @@ def get_10_info():
         "content": s.content,
         "created_at": s.created_at.isoformat(),
         "updated_at": s.updated_at.isoformat(),
+        "upvotes": s.upvotes,
+        "downvotes": s.downvotes,
         "status": s.status
     } for s in page_posts]), 200
 
@@ -817,4 +819,4 @@ if __name__ == '__main__':
     with app.app_context():
         initialize_database()
         NEED_AUDIT = get_config("need_audit", "false").lower() == "true"
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)

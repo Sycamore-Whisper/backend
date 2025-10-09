@@ -150,6 +150,8 @@
       "content": "文章内容",
       "created_at": "2024-05-10T12:00:00+00:00",
       "updated_at": "2024-05-10T12:00:00+00:00",
+      "upvotes": 114,
+      "downvotes": 514,
       "status": "Pass"
     }
   ]
@@ -173,6 +175,7 @@
 #### 12. 提交投诉
 - **URL**: `POST /report`
 - **请求参数（JSON）**:
+  
   ```json
   {
     "id": 123,
