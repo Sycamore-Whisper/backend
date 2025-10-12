@@ -100,7 +100,7 @@ BANNED_KEYWORDS = [
     "割腕", "跳楼"
 ]
 
-ADMIN_TOKEN = "LeonXieNeko14235^"
+ADMIN_TOKEN = "I_Love_SFLS_128936^"
 
 UPLOAD_FOLDER = "img"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
@@ -371,8 +371,6 @@ def get_post_info():
     return jsonify({
         "id": submission.id,
         "content": submission.content,
-        "created_at": submission.created_at.isoformat(),
-        "updated_at": submission.updated_at.isoformat(),
         "upvotes": submission.upvotes,
         "downvotes": submission.downvotes
     }), 200
@@ -415,8 +413,7 @@ def get_comments():
             "id": comment.id,
             "nickname": comment.nickname,
             "content": comment.content,
-            "parent_comment_id": comment.parent_comment_id,
-            "created_at": comment.created_at.isoformat()
+            "parent_comment_id": comment.parent_comment_id
         }
 
     comments = [serialize_comment(c) for c in submission.comments]
@@ -447,11 +444,8 @@ def get_10_info():
     return jsonify([{
         "id": s.id,
         "content": s.content,
-        "created_at": s.created_at.isoformat(),
-        "updated_at": s.updated_at.isoformat(),
         "upvotes": s.upvotes,
-        "downvotes": s.downvotes,
-        "status": s.status
+        "downvotes": s.downvotes
     } for s in page_posts]), 200
 
 
@@ -470,6 +464,11 @@ def get_statics():
 @app.route('/get/teapot', methods=['GET'])
 def return_418():
     abort(418)
+
+# === Admin测试API接口 ===
+@app.route('/test', methods=['GET', 'POST'])
+def return_200():
+    return 'API OK!!!', 200
 
 @app.route('/get/api_info', methods=['GET'])
 def get_api_info():
@@ -802,6 +801,11 @@ def admin_pending_reports():
         "created_at": r.created_at.isoformat()
     } for r in reports]), 200
 
+
+@app.route('/admin/test', methods=['GET', 'POST'])
+@require_admin
+def admin_return_200():
+    return 'Admin API OK!!!', 200
 
 # === 数据库初始化 ===
 def initialize_database():
