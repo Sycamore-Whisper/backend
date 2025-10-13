@@ -7,6 +7,9 @@ import zipfile
 from flask import send_file
 from werkzeug.utils import secure_filename
 import os
+import shutil
+import threading
+import time
 
 # === Flask 初始化 ===
 app = Flask(__name__)
@@ -729,10 +732,68 @@ def admin_recover():
     file.save(temp_path)
 
     try:
-        # 解压到当前目录，会覆盖数据库和 img 文件夹
+        # 1) 解压到临时目录，不直接覆盖源目录
+        extract_dir = os.path.join(BACKUP_FOLDER, f"extracted_{os.path.splitext(filename)[0]}")
+        if os.path.exists(extract_dir):
+            shutil.rmtree(extract_dir, ignore_errors=True)
+        os.makedirs(extract_dir, exist_ok=True)
+
         with zipfile.ZipFile(temp_path, 'r') as zip_ref:
-            zip_ref.extractall(os.path.dirname(os.path.abspath(__file__)))  
-        
+            zip_ref.extractall(extract_dir)
+
+        # 2) 恢复 img 文件夹到应用目录
+        src_img = os.path.join(extract_dir, 'img')
+        if os.path.isdir(src_img):
+            # 清空并复制
+            shutil.rmtree(IMG_FOLDER, ignore_errors=True)
+            shutil.copytree(src_img, IMG_FOLDER)
+
+        # 3) 恢复数据库到 DB_FILE
+        target_db = DB_FILE
+        db_basename = os.path.basename(target_db)
+        candidate = os.path.join(extract_dir, db_basename)
+        if not os.path.isfile(candidate):
+            # 兜底：在压缩包中搜索常见数据库文件扩展
+            candidate = None
+            for root, _, files in os.walk(extract_dir):
+                for f in files:
+                    if f.lower().endswith(('.db', '.sqlite', '.sqlite3')):
+                        candidate = os.path.join(root, f)
+                        break
+                if candidate:
+                    break
+        if not candidate:
+            return jsonify({"status": "Fail", "reason": "DB file not found in backup"}), 400
+
+        # 处理 SQLite WAL/SHM，避免增量日志合并新数据
+        wal = f"{target_db}-wal"
+        shm = f"{target_db}-shm"
+        for fpath in (wal, shm):
+            if os.path.exists(fpath):
+                try:
+                    os.remove(fpath)
+                except Exception as e:
+                    app.logger.warning(f"Failed to remove {fpath}: {e}")
+
+        # 确保 instance 目录存在
+        os.makedirs(os.path.dirname(target_db), exist_ok=True)
+        # 覆盖数据库文件
+        shutil.copy2(candidate, target_db)
+
+        # 4) 释放 SQLAlchemy 连接（如果持有旧句柄）
+        try:
+            db.session.remove()
+            db.engine.dispose()
+        except Exception:
+            pass
+
+        # 5) 清理临时文件夹与压缩包
+        try:
+            os.remove(temp_path)
+        except Exception:
+            pass
+        shutil.rmtree(extract_dir, ignore_errors=True)
+
         return jsonify({"status": "OK"}), 200
     except Exception as e:
         return jsonify({"status": "Fail", "reason": str(e)}), 500
