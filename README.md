@@ -1,28 +1,8 @@
-<h3 align="center">
+A simple anonymous post api awa!
 
 
 
-QwQ!!!!!
-
-
-
-</h3>
-
-
-
-<p align="center">
-
-
-
-<span>A simple anonymous post api awa!</span>
-
-
-
-</p>
-
-
-
-\## 快速开始~
+## 快速开始~
 
 
 
@@ -74,7 +54,7 @@ Linux/MacOS：'source post-api/bin/activate'
 
 
 
-\## API文档
+## API文档
 
 
 
@@ -86,7 +66,7 @@ API文档暂时未完成呜呜。
 
 
 
-\## License
+## License
 
 
 
