@@ -46,7 +46,7 @@ Linux/MacOS：`source post-api/bin/activate`
 
 
 
-`python api\_server.py`
+`python api_server.py`
 
 
 
