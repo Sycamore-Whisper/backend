@@ -8,8 +8,6 @@ from flask import send_file
 from werkzeug.utils import secure_filename
 import os
 import shutil
-import threading
-import time
 
 # === Flask 初始化 ===
 app = Flask(__name__)
