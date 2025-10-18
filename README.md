@@ -10,7 +10,7 @@ A simple anonymous post api awa!
 
 
 
-'git clone https://github.com/Sycamore-Whisper/backend.git'
+`git clone https://github.com/Sycamore-Whisper/backend.git`
 
 
 
@@ -18,7 +18,7 @@ A simple anonymous post api awa!
 
 
 
-'python -m venv post-api'
+`python -m venv post-api`
 
 
 
@@ -26,11 +26,11 @@ A simple anonymous post api awa!
 
 
 
-Windows：'post-api\\Scripts\\activate'
+Windows：`post-api\\Scripts\\activate`
 
 
 
-Linux/MacOS：'source post-api/bin/activate'
+Linux/MacOS：`source post-api/bin/activate`
 
 
 
@@ -38,7 +38,7 @@ Linux/MacOS：'source post-api/bin/activate'
 
 
 
-'pip install -r requirements.txt'
+`pip install -r requirements.txt`
 
 
 
@@ -46,7 +46,7 @@ Linux/MacOS：'source post-api/bin/activate'
 
 
 
-'python api\_server.py'
+`python api\_server.py`
 
 
 
