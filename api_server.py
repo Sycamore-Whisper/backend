@@ -758,7 +758,7 @@ def admin_del_post():
         return jsonify({"status": "Fail", "reason": "Post not found"}), 404
 
     try:
-        db.session.delete(submission)  # 会级联删除所有 comments（你在 Submission 模型里有 cascade='all, delete-orphan'）
+        db.session.delete(submission)
         db.session.commit()
         return jsonify({"status": "OK"}), 200
     except Exception as e:
