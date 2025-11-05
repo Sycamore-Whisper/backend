@@ -861,6 +861,10 @@ def admin_get_backup():
             # 添加数据库
             if os.path.exists(DB_FILE):
                 zipf.write(DB_FILE, arcname=os.path.basename(DB_FILE))
+            # 添加配置文件
+            config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.py')
+            if os.path.exists(config_path):
+                zipf.write(config_path, arcname='config.py')
             # 添加 img 文件夹
             if os.path.exists(IMG_FOLDER):
                 for root, dirs, files in os.walk(IMG_FOLDER):
@@ -898,14 +902,28 @@ def admin_recover():
         with zipfile.ZipFile(temp_path, 'r') as zip_ref:
             zip_ref.extractall(extract_dir)
 
-        # 2) 恢复 img 文件夹到应用目录
+        # 2) 先恢复配置文件并重新加载配置
+        try:
+            src_config = os.path.join(extract_dir, 'config.py')
+            if os.path.isfile(src_config):
+                dest_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.py')
+                shutil.copy2(src_config, dest_config)
+                # 重新加载配置以应用可能变化的上传目录等
+                try:
+                    load_config()
+                except Exception:
+                    pass
+        except Exception as e:
+            app.logger.warning(f"Recover config.py failed: {e}")
+
+        # 3) 恢复 img 文件夹到应用目录（根据当前配置中的上传目录）
         src_img = os.path.join(extract_dir, 'img')
         if os.path.isdir(src_img):
             # 清空并复制
             shutil.rmtree(IMG_FOLDER, ignore_errors=True)
             shutil.copytree(src_img, IMG_FOLDER)
 
-        # 3) 恢复数据库到 DB_FILE
+        # 4) 恢复数据库到 DB_FILE
         target_db = DB_FILE
         db_basename = os.path.basename(target_db)
         candidate = os.path.join(extract_dir, db_basename)
@@ -937,14 +955,14 @@ def admin_recover():
         # 覆盖数据库文件
         shutil.copy2(candidate, target_db)
 
-        # 4) 释放 SQLAlchemy 连接（如果持有旧句柄）
+        # 5) 释放 SQLAlchemy 连接（如果持有旧句柄）
         try:
             db.session.remove()
             db.engine.dispose()
         except Exception:
             pass
 
-        # 5) 清理临时文件夹与压缩包
+        # 6) 清理临时文件夹与压缩包
         try:
             os.remove(temp_path)
         except Exception:
