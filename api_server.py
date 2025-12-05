@@ -69,6 +69,16 @@ class Config(db.Model):
     value = db.Column(db.String(200), nullable=False)
 
 
+class Notice(db.Model):
+    __tablename__ = 'notices'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    type = db.Column(db.Enum('md', 'url'), default='md', nullable=False)
+    content = db.Column(db.Text, default='', nullable=False)
+    version = db.Column(db.Integer, default=0, nullable=False)
+    created_at = db.Column(db.DateTime, default=get_utc_now)
+    updated_at = db.Column(db.DateTime, default=get_utc_now, onupdate=get_utc_now)
+
+
 
 # === 工具函数 ===
 def get_config(key, default=None):
@@ -86,6 +96,27 @@ def set_config(key, value):
         conf = Config(key=key, value=str(value))
         db.session.add(conf)
     db.session.commit()
+
+
+def ensure_default_notice():
+    """确保至少存在一条公告记录"""
+    try:
+        existing = Notice.query.first()
+        if not existing:
+            n = Notice(type='md', content='', version=0)
+            db.session.add(n)
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+        # 初始化失败时不抛出致命错误，交由后续请求重试创建
+
+
+def get_current_notice():
+    """获取当前公告，若不存在则返回默认结构"""
+    n = Notice.query.order_by(Notice.id.asc()).first()
+    if not n:
+        return {"type": "md", "content": "", "version": 0}
+    return {"type": n.type, "content": n.content, "version": int(n.version)}
 
 
 # === 变量 ===
@@ -416,6 +447,51 @@ def upvote():
     submission.upvotes += 1
     db.session.commit()
     return jsonify({"status": "OK"}), 200
+
+
+@app.route('/get/notice', methods=['GET'])
+def get_notice():
+    """公开接口：获取当前公告内容与版本"""
+    try:
+        ensure_default_notice()
+        return jsonify(get_current_notice()), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/modify_notice', methods=['POST'])
+@require_admin
+def admin_modify_notice():
+    """管理员接口：修改公告内容、类型与版本"""
+    data = request.get_json() or {}
+    n_type = str(data.get('type', 'md')).lower()
+    content = str(data.get('content', ''))
+    version = data.get('version', None)
+
+    if n_type not in ['md', 'url']:
+        return jsonify({"status": "Fail", "reason": "type must be 'md' or 'url'"}), 400
+
+    try:
+        ensure_default_notice()
+        n = Notice.query.order_by(Notice.id.asc()).first()
+        if not n:
+            n = Notice(type=n_type, content=content, version=int(version or 0))
+            db.session.add(n)
+        else:
+            n.type = n_type
+            n.content = content
+            if version is None:
+                n.version = int(n.version) + 1
+            else:
+                try:
+                    n.version = int(version)
+                except Exception:
+                    return jsonify({"status": "Fail", "reason": "version must be integer"}), 400
+        db.session.commit()
+        return jsonify({"status": "OK", "version": int(n.version)}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "Fail", "reason": str(e)}), 500
 
 
 @app.route('/down', methods=['POST'])
@@ -1156,6 +1232,9 @@ def initialize_database():
         default_config = Config(key="need_audit", value="false")
         db.session.add(default_config)
         db.session.commit()
+
+    # 确保公告表有默认记录
+    ensure_default_notice()
 
 
 # === 启动 ===
