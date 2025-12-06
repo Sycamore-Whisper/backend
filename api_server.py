@@ -371,7 +371,7 @@ def ensure_db_and_audit():
 
 # === 管理端文章状态修改工具函数 ===
 def admin_change_status(submission_id, from_status, to_status):
-    submission = Submission.query.get(submission_id)
+    submission = db.session.get(Submission, submission_id)
     if not submission:
         return False, "Post not found"
     if submission.status != from_status:
@@ -440,7 +440,7 @@ def upvote():
     if not data or "id" not in data:
         return jsonify({"status": "Fail", "reason": "Value ID not found"}), 400
 
-    submission = Submission.query.get(data["id"])
+    submission = db.session.get(Submission, data["id"])
     if not submission:
         return jsonify({"status": "Fail", "reason": "Post not found"}), 404
 
@@ -503,7 +503,7 @@ def downvote():
     if not data or "id" not in data:
         return jsonify({"status": "Fail", "reason": "Value ID not found"}), 400
 
-    submission = Submission.query.get(data["id"])
+    submission = db.session.get(Submission, data["id"])
     if not submission:
         return jsonify({"status": "Fail", "reason": "Post not found"}), 404
 
@@ -527,7 +527,7 @@ def post_comment():
     nickname = data["nickname"].strip() or "匿名用户"
 
     # 检查投稿是否存在
-    submission = Submission.query.get(submission_id)
+    submission = db.session.get(Submission, submission_id)
     if not submission:
         return jsonify({"id": None, "status": "Fail"}), 404
 
@@ -537,7 +537,7 @@ def post_comment():
 
     # 检查回复的评论是否合法
     if parent_comment_id != 0:
-        reply_comment = Comment.query.get(parent_comment_id)
+        reply_comment = db.session.get(Comment, parent_comment_id)
         if not reply_comment or reply_comment.submission_id != submission_id:
             return jsonify({"id": None, "status": "Wrong_Reply"}), 400
 
@@ -617,7 +617,7 @@ def submit_report():
         if field not in data:
             return jsonify({"status": "Fail", "reason": f"{field} not provided"}), 400
 
-    submission = Submission.query.get(data["id"])
+    submission = db.session.get(Submission, data["id"])
     if not submission:
         return jsonify({"status": "Fail", "reason": "Post not found"}), 404
 
@@ -643,7 +643,7 @@ def get_post_state():
     if not post_id:
         return jsonify({"status": "Fail", "reason": "ID not provided"}), 400
 
-    submission = Submission.query.get(post_id)
+    submission = db.session.get(Submission, post_id)
     if not submission:
         return jsonify({"status": "Deleted or Not Found"}), 200
 
@@ -660,7 +660,7 @@ def get_report_state():
     if not report_id:
         return jsonify({"status": "Fail", "reason": "ID not provided"}), 400
 
-    report = Report.query.get(report_id)
+    report = db.session.get(Report, report_id)
     if not report:
         return jsonify({"status": "Deleted or Not Found"}), 200
 
@@ -678,7 +678,7 @@ def get_post_info():
     if not post_id:
         return jsonify({"status": "Fail", "reason": "ID missing"}), 400
 
-    submission = Submission.query.get(post_id)
+    submission = db.session.get(Submission, post_id)
     if not submission or submission.status != "Pass":
         return jsonify({"status": "Fail", "reason": "Not found"}), 404
 
@@ -697,7 +697,7 @@ def get_admin_post_info():
     if not post_id:
         return jsonify({"status": "Fail", "reason": "ID missing"}), 400
 
-    submission = Submission.query.get(post_id)
+    submission = db.session.get(Submission, post_id)
     if not submission:
         return jsonify({"status": "Fail", "reason": "Not found"}), 404
 
@@ -718,7 +718,7 @@ def get_comments():
     if not post_id:
         return jsonify({"status": "Fail", "reason": "ID missing"}), 400
 
-    submission = Submission.query.get(post_id)
+    submission = db.session.get(Submission, post_id)
     if not submission or submission.status != "Pass":
         return jsonify({"status": "Fail", "reason": "Post not found"}), 404
 
@@ -881,7 +881,7 @@ def admin_delete_comment():
     if not data or "id" not in data:
         return jsonify({"status": "Fail", "reason": "Value ID not found"}), 400
 
-    comment = Comment.query.get(data["id"])
+    comment = db.session.get(Comment, data["id"])
     if not comment:
         return jsonify({"status": "Fail", "reason": "Comment not found"}), 404
 
@@ -901,7 +901,7 @@ def admin_modify_comment():
     if not data or not all(k in data for k in ("id", "content", "parent_comment_id", "nickname")):
         return jsonify({"status": "Fail", "reason": "Missing required fields"}), 400
 
-    comment = Comment.query.get(data["id"])
+    comment = db.session.get(Comment, data["id"])
     if not comment:
         return jsonify({"status": "Fail", "reason": "Comment not found"}), 404
 
@@ -911,7 +911,7 @@ def admin_modify_comment():
 
     # --- 检查回复目标是否合法 ---
     if new_parent_id != 0:
-        parent_comment = Comment.query.get(new_parent_id)
+        parent_comment = db.session.get(Comment, new_parent_id)
         if not parent_comment or parent_comment.submission_id != comment.submission_id:
             return jsonify({"status": "Wrong_Reply"}), 400
 
@@ -933,7 +933,7 @@ def admin_del_post():
     if not data or "id" not in data:
         return jsonify({"status": "Fail", "reason": "Value ID not found"}), 400
 
-    submission = Submission.query.get(data["id"])
+    submission = db.session.get(Submission, data["id"])
     if not submission:
         return jsonify({"status": "Fail", "reason": "Post not found"}), 404
 
@@ -953,7 +953,7 @@ def admin_modify_post():
     if not data or "id" not in data or "content" not in data:
         return jsonify({"status": "Fail", "reason": "Missing id or content"}), 400
 
-    submission = Submission.query.get(data["id"])
+    submission = db.session.get(Submission, data["id"])
     if not submission:
         return jsonify({"status": "Fail", "reason": "Post not found"}), 404
 
@@ -989,7 +989,7 @@ def approve_report():
     if not data or "id" not in data:
         return jsonify({"status": "Fail", "reason": "Value ID not found"}), 400
 
-    report = Report.query.get(data["id"])
+    report = db.session.get(Report, data["id"])
     if not report:
         return jsonify({"status": "Fail", "reason": "Report not found"}), 404
 
@@ -999,7 +999,7 @@ def approve_report():
         db.session.commit()  # <- 先提交状态
 
         # 删除文章及其所有评论
-        submission = Submission.query.get(report.submission_id)
+        submission = db.session.get(Submission, report.submission_id)
         if submission:
             db.session.delete(submission)
             db.session.commit()
@@ -1018,7 +1018,7 @@ def reject_report():
     if not data or "id" not in data:
         return jsonify({"status": "Fail", "reason": "Value ID not found"}), 400
 
-    report = Report.query.get(data["id"])
+    report = db.session.get(Report, data["id"])
     if not report:
         return jsonify({"status": "Fail", "reason": "Report not found"}), 404
 
