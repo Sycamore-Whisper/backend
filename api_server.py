@@ -454,9 +454,29 @@ def get_notice():
     """公开接口：获取当前公告内容与版本"""
     try:
         ensure_default_notice()
-        return jsonify(get_current_notice()), 200
+        notice_data = get_current_notice()
+        # 获取显示状态，默认为开启
+        display = get_config("show_notice", "true")
+        notice_data["display"] = display
+        return jsonify(notice_data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/notice_switch', methods=['POST'])
+@require_admin
+def admin_notice_switch():
+    """管理员接口：开关公告显示"""
+    try:
+        data = request.get_json() or {}
+        val = str(data.get('value', 'true')).lower()
+        if val not in ['true', 'false']:
+            return jsonify({"status": "Fail", "reason": "Invalid value"}), 400
+        
+        set_config("show_notice", val)
+        return jsonify({"status": "OK"}), 200
+    except Exception as e:
+        return jsonify({"status": "Fail", "reason": str(e)}), 500
 
 
 @app.route('/admin/modify_notice', methods=['POST'])
@@ -1240,3 +1260,4 @@ def initialize_database():
 # === 启动 ===
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000) # 监听IP&端口，建议监听127.0.0.1并配置反向代理
+
